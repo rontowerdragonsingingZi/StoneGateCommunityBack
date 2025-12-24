@@ -13,10 +13,8 @@ class UploadController extends Controller
     public function index(Request $request): JsonResponse
     {
         $request->validate([
-            'folder' => 'sometimes|string|max:128',
             'page' => 'sometimes|integer|min:1',
             'per_page' => 'sometimes|integer|min:1|max:500',
-            'deep' => 'sometimes|boolean',
         ]);
 
         if (!config('filesystems.disks.r2.bucket')) {
@@ -34,14 +32,14 @@ class UploadController extends Controller
             ], 500);
         }
 
-        $folder = trim($request->input('folder', ''), '/');
+        // 从 JWT 获取用户 ID，强制限制在用户自己的目录
+        $userId = $request->attributes->get('jwt_user_id');
+        $prefix = "users/{$userId}/";
+
         $page = (int) $request->input('page', 1);
         $perPage = (int) $request->input('per_page', 50);
-        $deep = (bool) $request->boolean('deep', true);
 
-        $list = $deep
-            ? \Illuminate\Support\Facades\Storage::disk('r2')->allFiles($folder)
-            : \Illuminate\Support\Facades\Storage::disk('r2')->files($folder);
+        $list = Storage::disk('r2')->files($prefix);
 
         // 排序：按键名升序
         sort($list, SORT_STRING);
@@ -77,10 +75,25 @@ class UploadController extends Controller
             'key' => 'required|string',
             'expires' => 'sometimes|integer|min:60|max:86400',
         ]);
+
+        // 从 JWT 获取用户 ID，校验所有权
+        $userId = $request->attributes->get('jwt_user_id');
+        $key = $request->input('key');
+        $expectedPrefix = "users/{$userId}/";
+
+        // 校验 Key 是否属于当前用户
+        if (!str_starts_with($key, $expectedPrefix)) {
+            return response()->json([
+                'code' => 403,
+                'message' => '无权访问该资源，世界线干涉被拒绝',
+                'data' => null,
+            ], 403);
+        }
+
         $minutes = ceil(((int) $request->input('expires', 900)) / 60); // 默认15分钟
         try {
-            $url = \Illuminate\Support\Facades\Storage::disk('r2')->temporaryUrl(
-                $request->string('key'),
+            $url = Storage::disk('r2')->temporaryUrl(
+                $key,
                 now()->addMinutes($minutes)
             );
             return response()->json([
@@ -99,10 +112,9 @@ class UploadController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        // 基础校验
+        // 基础校验（移除 folder 参数，路径由后端生成）
         $request->validate([
-'file' => 'required|file|image|mimes:jpg,jpeg,png,gif,webp,avif|max:51200', // 50MB
-            'folder' => 'sometimes|string|max:128'
+            'file' => 'required|file|image|mimes:jpg,jpeg,png,gif,webp,avif|max:51200', // 50MB
         ]);
 
         // 必要配置检查
@@ -121,20 +133,18 @@ class UploadController extends Controller
             ], 500);
         }
 
-        $file = $request->file('file');
-        $folder = trim($request->input('folder', 'uploads/images'), '/');
+        // 从 JWT 获取用户 ID（前端无法控制）
+        $userId = $request->attributes->get('jwt_user_id');
 
-        $datePath = now()->format('Y/m/d');
-        $ext = strtolower($file->getClientOriginalExtension());
-        $basename = Str::uuid()->toString();
-        $filename = $basename . '.' . $ext;
-        $key = $folder . '/' . $datePath . '/' . $filename;
+        $file = $request->file('file');
+
+        // 后端生成 Key：users/{user_id}/{uuid}.{ext}
+        $ext = strtolower($file->getClientOriginalExtension()) ?: $file->guessExtension();
+        $key = "users/{$userId}/" . Str::uuid()->toString() . ".{$ext}";
 
         // 上传到 R2（S3 兼容）
-        // 注意：R2 建议使用 path-style endpoint，配置已在 filesystems.php 设置
         $stream = fopen($file->getRealPath(), 'r');
         $ok = Storage::disk('r2')->put($key, $stream, [
-            // R2 多数情况下不支持对象级 ACL，公有访问请在桶策略或自定义域开启
             'visibility' => null,
             'ContentType' => $file->getMimeType(),
         ]);
@@ -150,7 +160,7 @@ class UploadController extends Controller
             ], 500);
         }
 
-        // 返回可访问地址（若提供 R2_PUBLIC_BASE_URL 则拼接公开地址）
+        // 返回可访问地址
         $publicBase = rtrim((string) env('R2_PUBLIC_BASE_URL', ''), '/');
         $url = $publicBase !== '' ? ($publicBase . '/' . $key) : null;
 
@@ -161,7 +171,7 @@ class UploadController extends Controller
                 'key' => $key,
                 'mime' => $file->getMimeType(),
                 'size' => $file->getSize(),
-                'url' => $url, // 若桶未公开，此处可能为 null，可在前端改用你配置的 CDN 域名
+                'url' => $url,
             ],
         ], 201);
     }

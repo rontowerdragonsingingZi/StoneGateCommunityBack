@@ -384,6 +384,8 @@ Content-Type: application/json
 
 ## 图床上传（Cloudflare R2）
 
+> 采用用户隔离方案，每个用户的图片存储在 `users/{user_id}/` 前缀下，路径由后端自动生成，前端无法控制。
+
 ### 上传图片 🔒
 
 > 需要JWT认证
@@ -393,15 +395,13 @@ POST /api/upload-image
 - Content-Type: multipart/form-data
 - Authorization: Bearer <token>
 - 字段：
-  - file: 图片文件（必填，jpg/jpeg/png/gif/webp/avif，≤10MB）
-  - folder: 目标目录（可选，默认 uploads/images）
+  - file: 图片文件（必填，jpg/jpeg/png/gif/webp/avif，≤50MB）
 
 示例
 
 curl -i -X POST https://api.mahoer.space/api/upload-image \
   -H "Authorization: Bearer <token>" \
-  -F "file=@/path/to/image.jpg" \
-  -F "folder=avatars"
+  -F "file=@/path/to/image.jpg"
 
 成功响应
 
@@ -409,10 +409,10 @@ curl -i -X POST https://api.mahoer.space/api/upload-image \
   "code": 201,
   "message": "金属乌帕已穿越至R2世界线",
   "data": {
-    "key": "avatars/2025/12/23/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.jpg",
+    "key": "users/3/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.jpg",
     "mime": "image/jpeg",
     "size": 123456,
-    "url": "https://<你的公共域名>/avatars/2025/12/23/xxxx.jpg" // 若设置了 R2_PUBLIC_BASE_URL
+    "url": "https://<你的公共域名>/users/3/xxxx.jpg"
   }
 }
 
@@ -421,8 +421,9 @@ curl -i -X POST https://api.mahoer.space/api/upload-image \
 ## 列出图片 🔒
 
 > 需要JWT认证
+> 自动列出当前用户的所有图片，无需指定目录
 
-GET /api/images?folder=avatars&per_page=50&page=1&deep=1
+GET /api/images?per_page=50&page=1
 Authorization: Bearer <token>
 
 响应
@@ -431,25 +432,24 @@ Authorization: Bearer <token>
   "code": 200,
   "message": "El Psy Kongroo",
   "data": {
-    "total": 123,
+    "total": 10,
     "page": 1,
     "per_page": 50,
     "items": [
-      { "key": "avatars/2025/12/23/xxx.jpg", "url": "https://<你的公共域名>/avatars/2025/12/23/xxx.jpg" },
-      { "key": "uploads/images/2025/12/23/yyy.png", "url": null }
+      { "key": "users/3/xxx.jpg", "url": "https://<你的公共域名>/users/3/xxx.jpg" },
+      { "key": "users/3/yyy.png", "url": "https://<你的公共域名>/users/3/yyy.png" }
     ]
   }
 }
-
-说明：当 .env 设置了 R2_PUBLIC_BASE_URL 时会返回可直连的 url；否则 url 为 null，可使用“生成临时链接”接口。
 
 ---
 
 ## 生成临时访问链接（用于私有桶） 🔒
 
 > 需要JWT认证
+> 只能访问当前用户自己的图片
 
-GET /api/images/presign?key=avatars/2025/12/23/xxx.jpg&expires=900
+GET /api/images/presign?key=users/3/xxx.jpg&expires=900
 Authorization: Bearer <token>
 
 响应
@@ -458,5 +458,13 @@ Authorization: Bearer <token>
   "code": 200,
   "message": "El Psy Kongroo",
   "data": { "url": "https://签名后的临时地址" }
+}
+
+**错误响应（访问他人图片）**
+
+{
+  "code": 403,
+  "message": "无权访问该资源，世界线干涉被拒绝",
+  "data": null
 }
 
