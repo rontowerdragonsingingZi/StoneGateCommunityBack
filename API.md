@@ -291,6 +291,110 @@ Content-Type: application/json
 | 状态码 | 说明 |
 |--------|------|
 | 200 | El Psy Kongroo - 操作成功 |
+| 201 | Labmem注册完成 / 上传完成 |
+| 401 | D-Mail密钥不匹配 |
+| 404 | Labmem不存在于此世界线 |
+| 409 | 世界线冲突（代号已存在）|
+| 422 | 参数错误（无效的输入）|
+| 500 | 世界线异常（服务器错误）|
+
+---
+
+## 图床上传（Cloudflare R2）
+
+POST /api/upload-image
+
+- Content-Type: multipart/form-data
+- 字段：
+  - file: 图片文件（必填，jpg/jpeg/png/gif/webp/avif，≤10MB）
+  - folder: 目标目录（可选，默认 uploads/images）
+
+示例
+
+curl -i -X POST https://api.mahoer.space/api/upload-image \
+  -F "file=@/path/to/image.jpg" \
+  -F "folder=avatars"
+
+成功响应
+
+{
+  "code": 201,
+  "message": "金属乌帕已穿越至R2世界线",
+  "data": {
+    "key": "avatars/2025/12/23/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.jpg",
+    "mime": "image/jpeg",
+    "size": 123456,
+    "url": "https://<你的公共域名>/avatars/2025/12/23/xxxx.jpg" // 若设置了 R2_PUBLIC_BASE_URL
+  }
+}
+
+---
+
+## 列出图片
+
+GET /api/images?folder=avatars&per_page=50&page=1&deep=1
+
+响应
+
+{
+  "code": 200,
+  "message": "El Psy Kongroo",
+  "data": {
+    "total": 123,
+    "page": 1,
+    "per_page": 50,
+    "items": [
+      { "key": "avatars/2025/12/23/xxx.jpg", "url": "https://<你的公共域名>/avatars/2025/12/23/xxx.jpg" },
+      { "key": "uploads/images/2025/12/23/yyy.png", "url": null }
+    ]
+  }
+}
+
+说明：当 .env 设置了 R2_PUBLIC_BASE_URL 时会返回可直连的 url；否则 url 为 null，可使用“生成临时链接”接口。
+
+---
+
+## 生成临时访问链接（用于私有桶）
+
+GET /api/images/presign?key=avatars/2025/12/23/xxx.jpg&expires=900
+
+响应
+
+{
+  "code": 200,
+  "message": "El Psy Kongroo",
+  "data": { "url": "https://签名后的临时地址" }
+}
+
+POST /api/upload-image
+
+- Content-Type: multipart/form-data
+- 字段：
+  - file: 图片文件（必填，jpg/jpeg/png/gif/webp/avif，≤10MB）
+  - folder: 目标目录（可选，默认 uploads/images）
+
+示例
+
+curl -i -X POST https://api.mahoer.space/api/upload-image \
+  -F "file=@/path/to/image.jpg" \
+  -F "folder=avatars"
+
+成功响应
+
+{
+  "code": 201,
+  "message": "金属乌帕已穿越至R2世界线",
+  "data": {
+    "key": "avatars/2025/12/23/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.jpg",
+    "mime": "image/jpeg",
+    "size": 123456,
+    "url": "https://<你的公共域名>/avatars/2025/12/23/xxxx.jpg" // 若设置了 R2_PUBLIC_BASE_URL
+  }
+}
+
+| 状态码 | 说明 |
+|--------|------|
+| 200 | El Psy Kongroo - 操作成功 |
 | 201 | Labmem注册完成 |
 | 401 | D-Mail密钥不匹配 |
 | 404 | Labmem不存在于此世界线 |

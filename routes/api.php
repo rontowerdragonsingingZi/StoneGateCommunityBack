@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\UploadController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,3 +20,10 @@ Route::prefix('users')->group(function () {
     Route::post('/login', [UserController::class, 'login']);     // 用戶登錄
     Route::post('/check-username', [UserController::class, 'checkUsername']); // 檢查用戶名
 });
+
+// 图片上传
+Route::post('/upload-image', [UploadController::class, 'store']);
+// 列出图片（支持 folder、page、per_page、deep）
+Route::get('/images', [UploadController::class, 'index']);
+// 私有桶：生成临时访问链接
+Route::get('/images/presign', [UploadController::class, 'presign']);
