@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use App\Services\JwtService;
 
 class UserController extends Controller
 {
@@ -153,10 +154,20 @@ class UserController extends Controller
             ], 401);
         }
 
+        // 生成JWT令牌
+        $jwt = new JwtService();
+        $token = $jwt->encode([
+            'user_id' => $user->id,
+            'user_name' => $user->name,
+        ]);
+
         return response()->json([
             'code' => 200,
             'message' => '世界线变动率确认，欢迎回来Labmem',
-            'data' => $user
+            'data' => [
+                'user' => $user,
+                'token' => $token,
+            ]
         ]);
     }
 
