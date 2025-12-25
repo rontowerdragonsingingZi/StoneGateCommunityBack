@@ -33,7 +33,8 @@ Token有效期为24小时，过期后需重新登录获取。
 | GET /api/users/{id} | 获取单个Labmem信息 |
 | PUT /api/users/{id} | 更新Labmem信息 |
 | DELETE /api/users/{id} | 移除Labmem |
-| POST /api/upload-image | 图床上传 |
+| POST /api/upload-image | 图床上传（图片） |
+| POST /api/upload-file | 通用文件上传 |
 | GET /api/images | 列出图片 |
 | GET /api/images/presign | 生成临时访问链接 |
 | GET /api/users/search | 搜索Labmem（添加好友用）|
@@ -391,9 +392,13 @@ Content-Type: application/json
 
 ---
 
-## 图床上传（Cloudflare R2）
+## 文件上传（Cloudflare R2）
 
-> 采用用户隔离方案，每个用户的图片存储在 `users/{user_id}/` 前缀下，路径由后端自动生成，前端无法控制。
+> 采用用户隔离方案，每个用户的文件存储在 `users/{user_id}/` 前缀下，路径由后端自动生成，前端无法控制。
+>
+> **存储路径规范：**
+> - 图片：`users/{user_id}/{uuid}.{ext}`
+> - 通用文件：`users/{user_id}/files/{uuid}.{ext}`
 
 ### 上传图片 🔒
 
@@ -427,7 +432,41 @@ curl -i -X POST https://api.mahoer.space/api/upload-image \
 
 ---
 
-## 列出图片 🔒
+### 上传通用文件 🔒
+
+> 需要JWT认证
+> 支持所有文件类型（视频/音频/文档/压缩包等），用于聊天发送文件等场景
+
+POST /api/upload-file
+
+- Content-Type: multipart/form-data
+- Authorization: Bearer <token>
+- 字段：
+  - file: 文件（必填，≤100MB）
+
+示例
+
+curl -i -X POST https://api.mahoer.space/api/upload-file \
+  -H "Authorization: Bearer <token>" \
+  -F "file=@/path/to/document.pdf"
+
+成功响应
+
+{
+  "code": 201,
+  "message": "文件已传输至R2世界线",
+  "data": {
+    "key": "users/3/files/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.pdf",
+    "name": "document.pdf",
+    "mime": "application/pdf",
+    "size": 123456,
+    "url": "https://<你的公共域名>/users/3/files/xxxx.pdf"
+  }
+}
+
+---
+
+### 列出图片 🔒
 
 > 需要JWT认证
 > 自动列出当前用户的所有图片，无需指定目录
@@ -500,8 +539,17 @@ Authorization: Bearer <token>
 **参数**
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| content | string | ✅ | 消息内容（最多2000字）|
-| type | string | ❌ | 消息类型：text/image/system，默认text |
+| content | string | ✅ | 消息内容（文本或文件URL，最多2000字）|
+| channel | string | ✅ | 频道名称 |
+| type | string | ❌ | 消息类型：text/image/file/system，默认text |
+
+**type 类型说明**
+| 值 | 说明 | content 内容 |
+|------|------|------|
+| text | 纯文本消息 | 文本内容 |
+| image | 图片消息 | 图片URL |
+| file | 文件消息 | 文件URL |
+| system | 系统消息 | 系统提示文本 |
 
 **请求示例**
 ```json
@@ -875,8 +923,16 @@ Authorization: Bearer <token>
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | friend_id | int | ✅ | 好友的用户ID |
-| content | string | ✅ | 消息内容（最多2000字）|
-| type | string | ❌ | 消息类型：text/image/system，默认text |
+| content | string | ✅ | 消息内容（文本或文件URL，最多2000字）|
+| type | string | ❌ | 消息类型：text/image/file/system，默认text |
+
+**type 类型说明**
+| 值 | 说明 | content 内容 |
+|------|------|------|
+| text | 纯文本消息 | 文本内容 |
+| image | 图片消息 | 图片URL |
+| file | 文件消息 | 文件URL |
+| system | 系统消息 | 系统提示文本 |
 
 **请求示例**
 ```json

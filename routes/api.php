@@ -36,6 +36,7 @@ Route::middleware(JwtAuth::class)->group(function () {
 
     // 图床相关
     Route::post('/upload-image', [UploadController::class, 'store']);     // 图片上传
+    Route::post('/upload-file', [UploadController::class, 'storeFile']);  // 通用文件上传
     Route::get('/images', [UploadController::class, 'index']);            // 列出图片
     Route::get('/images/presign', [UploadController::class, 'presign']);  // 生成临时访问链接
 

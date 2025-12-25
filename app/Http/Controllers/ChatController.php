@@ -17,7 +17,7 @@ class ChatController extends Controller
     {
         $validated = $request->validate([
             'content' => 'required|string|max:2000',
-            'type' => 'sometimes|in:text,image,system',
+            'type' => 'sometimes|in:text,image,file,system',
             'channel' => 'required|string|max:50|regex:/^[a-z0-9_-]+$/',
         ]);
 

@@ -175,4 +175,76 @@ class UploadController extends Controller
             ],
         ], 201);
     }
+
+    /**
+     * 通用文件上传（支持所有文件类型）
+     * 用于聊天发送文件、附件等场景
+     */
+    public function storeFile(Request $request): JsonResponse
+    {
+        // 基础校验（不限制文件类型，只限制大小）
+        $request->validate([
+            'file' => 'required|file|max:102400', // 100MB
+        ]);
+
+        // 必要配置检查
+        if (!config('filesystems.disks.r2.bucket')) {
+            return response()->json([
+                'code' => 500,
+                'message' => '世界线异常：R2 Bucket 未配置(R2_BUCKET)',
+                'data' => null,
+            ], 500);
+        }
+        if (!config('filesystems.disks.r2.endpoint')) {
+            return response()->json([
+                'code' => 500,
+                'message' => '世界线异常：R2 Endpoint 未配置(R2_ENDPOINT)',
+                'data' => null,
+            ], 500);
+        }
+
+        // 从 JWT 获取用户 ID
+        $userId = $request->attributes->get('jwt_user_id');
+
+        $file = $request->file('file');
+        $originalName = $file->getClientOriginalName();
+
+        // 后端生成 Key：users/{user_id}/files/{uuid}.{ext}
+        $ext = strtolower($file->getClientOriginalExtension()) ?: $file->guessExtension() ?: 'bin';
+        $key = "users/{$userId}/files/" . Str::uuid()->toString() . ".{$ext}";
+
+        // 上传到 R2（S3 兼容）
+        $stream = fopen($file->getRealPath(), 'r');
+        $ok = Storage::disk('r2')->put($key, $stream, [
+            'visibility' => null,
+            'ContentType' => $file->getMimeType(),
+        ]);
+        if (is_resource($stream)) {
+            fclose($stream);
+        }
+
+        if (!$ok) {
+            return response()->json([
+                'code' => 500,
+                'message' => '世界线异常：上传失败',
+                'data' => null,
+            ], 500);
+        }
+
+        // 返回可访问地址
+        $publicBase = rtrim((string) env('R2_PUBLIC_BASE_URL', ''), '/');
+        $url = $publicBase !== '' ? ($publicBase . '/' . $key) : null;
+
+        return response()->json([
+            'code' => 201,
+            'message' => '文件已传输至R2世界线',
+            'data' => [
+                'key' => $key,
+                'name' => $originalName,
+                'mime' => $file->getMimeType(),
+                'size' => $file->getSize(),
+                'url' => $url,
+            ],
+        ], 201);
+    }
 }
