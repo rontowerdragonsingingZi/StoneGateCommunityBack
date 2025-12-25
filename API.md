@@ -36,6 +36,15 @@ Token有效期为24小时，过期后需重新登录获取。
 | POST /api/upload-image | 图床上传 |
 | GET /api/images | 列出图片 |
 | GET /api/images/presign | 生成临时访问链接 |
+| GET /api/users/search | 搜索Labmem（添加好友用）|
+| GET /api/friends | 获取好友列表 |
+| POST /api/friends/request | 发送好友请求 |
+| GET /api/friends/requests | 获取待处理的好友请求 |
+| POST /api/friends/{id}/accept | 接受好友请求 |
+| POST /api/friends/{id}/reject | 拒绝好友请求 |
+| DELETE /api/friends/{friendId} | 删除好友 |
+| POST /api/private-chat/send | 发送私聊消息 |
+| GET /api/private-chat/history | 获取私聊历史消息 |
 
 ### 不需要JWT认证的接口
 
@@ -567,4 +576,420 @@ Authorization: Bearer <token>
 | joining | 有新用户加入 |
 | leaving | 有用户离开 |
 | .message.sent | 收到新消息 |
+
+---
+
+## 同行Labmem（好友系统）
+
+> 好友关系采用双向记录模式，每对好友关系在数据库中存储两条记录，便于高效查询
+
+### 1. 搜索Labmem 🔒
+
+> 需要JWT认证
+> 用于搜索并添加好友，会排除自己
+
+**请求**
+```
+GET /api/users/search?q=凤凰院
+Authorization: Bearer <token>
+```
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| q | string | ✅ | 搜索关键词（1-50字）|
+
+**响应**
+```json
+{
+    "code": 0,
+    "message": "success",
+    "data": [
+        {
+            "id": 1,
+            "name": "凤凰院凶真",
+            "avatar": null,
+            "friendship_status": "none"
+        }
+    ]
+}
+```
+
+**friendship_status 说明**
+| 值 | 说明 |
+|------|------|
+| none | 非好友，可发送请求 |
+| pending | 已向对方发送请求，等待确认 |
+| accepted | 已是好友 |
+| incoming | 对方已向你发送请求 |
+
+---
+
+### 2. 获取好友列表 🔒
+
+> 需要JWT认证
+
+**请求**
+```
+GET /api/friends
+Authorization: Bearer <token>
+```
+
+**响应**
+```json
+{
+    "code": 0,
+    "message": "success",
+    "data": [
+        {
+            "id": 1,
+            "name": "凤凰院凶真",
+            "avatar": null,
+            "added_at": "2025-12-25T10:00:00+08:00"
+        }
+    ]
+}
+```
+
+---
+
+### 3. 发送好友请求 🔒
+
+> 需要JWT认证
+
+**请求**
+```
+POST /api/friends/request
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| friend_id | int | ✅ | 目标Labmem的ID |
+
+**请求示例**
+```json
+{
+    "friend_id": 2
+}
+```
+
+**成功响应**
+```json
+{
+    "code": 0,
+    "message": "好友请求已发送"
+}
+```
+
+**特殊情况：对方也向你发送了请求**
+```json
+{
+    "code": 0,
+    "message": "对方也向你发送了请求，已自动成为好友"
+}
+```
+
+**错误响应**
+```json
+{
+    "code": 400,
+    "message": "不能添加自己为好友"
+}
+```
+
+```json
+{
+    "code": 400,
+    "message": "已经是好友了"
+}
+```
+
+```json
+{
+    "code": 400,
+    "message": "已发送过好友请求，请等待对方确认"
+}
+```
+
+---
+
+### 4. 获取待处理的好友请求 🔒
+
+> 需要JWT认证
+> 获取别人发给自己的待处理请求
+
+**请求**
+```
+GET /api/friends/requests
+Authorization: Bearer <token>
+```
+
+**响应**
+```json
+{
+    "code": 0,
+    "message": "success",
+    "data": [
+        {
+            "id": 1,
+            "user": {
+                "id": 2,
+                "name": "凤凰院凶真",
+                "avatar": null
+            },
+            "created_at": "2025-12-25T10:00:00+08:00"
+        }
+    ]
+}
+```
+
+---
+
+### 5. 接受好友请求 🔒
+
+> 需要JWT认证
+
+**请求**
+```
+POST /api/friends/{id}/accept
+Authorization: Bearer <token>
+```
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | ✅ | 好友请求的ID（来自获取待处理请求接口）|
+
+**成功响应**
+```json
+{
+    "code": 0,
+    "message": "已接受好友请求"
+}
+```
+
+**错误响应**
+```json
+{
+    "code": 404,
+    "message": "好友请求不存在或已处理"
+}
+```
+
+---
+
+### 6. 拒绝好友请求 🔒
+
+> 需要JWT认证
+
+**请求**
+```
+POST /api/friends/{id}/reject
+Authorization: Bearer <token>
+```
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | ✅ | 好友请求的ID（来自获取待处理请求接口）|
+
+**成功响应**
+```json
+{
+    "code": 0,
+    "message": "已拒绝好友请求"
+}
+```
+
+**错误响应**
+```json
+{
+    "code": 404,
+    "message": "好友请求不存在或已处理"
+}
+```
+
+---
+
+### 7. 删除好友 🔒
+
+> 需要JWT认证
+
+**请求**
+```
+DELETE /api/friends/{friendId}
+Authorization: Bearer <token>
+```
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| friendId | int | ✅ | 好友的用户ID |
+
+**成功响应**
+```json
+{
+    "code": 0,
+    "message": "已删除好友"
+}
+```
+
+**错误响应**
+```json
+{
+    "code": 404,
+    "message": "好友关系不存在"
+}
+```
+
+---
+
+## 私聊D-Mail（私人通信）
+
+> 基于好友关系的一对一私聊，使用WebSocket实现实时通信
+> 私聊频道格式：`private-chat.{conversationId}`
+> conversationId由两个用户ID组成：`{较小ID}_{较大ID}`
+
+### WebSocket 私聊频道
+
+- 频道类型：Private Channel
+- 频道格式：`private-chat.{conversationId}`
+- 例如用户1和用户3的私聊频道：`private-chat.1_3`
+
+### 1. 发送私聊消息 🔒
+
+> 需要JWT认证
+> 只能发送给好友
+
+**请求**
+```
+POST /api/private-chat/send
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| friend_id | int | ✅ | 好友的用户ID |
+| content | string | ✅ | 消息内容（最多2000字）|
+| type | string | ❌ | 消息类型：text/image/system，默认text |
+
+**请求示例**
+```json
+{
+    "friend_id": 2,
+    "content": "El Psy Kongroo"
+}
+```
+
+**成功响应**
+```json
+{
+    "code": 201,
+    "message": "D-Mail已发送",
+    "data": {
+        "id": 1,
+        "conversation_id": "1_2",
+        "content": "El Psy Kongroo",
+        "type": "text",
+        "created_at": "2025-12-25T10:30:00+08:00",
+        "sender": {
+            "id": 1,
+            "name": "凤凰院凶真",
+            "avatar": null
+        }
+    }
+}
+```
+
+**错误响应**
+```json
+{
+    "code": 403,
+    "message": "只能给好友发送私聊消息"
+}
+```
+
+---
+
+### 2. 获取私聊历史消息 🔒
+
+> 需要JWT认证
+> 只能获取好友的聊天记录
+> 获取消息时会自动标记为已读
+
+**请求**
+```
+GET /api/private-chat/history?friend_id=2&limit=50&before_id=100
+Authorization: Bearer <token>
+```
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| friend_id | int | ✅ | 好友的用户ID |
+| limit | int | ❌ | 获取数量，默认50，最大100 |
+| before_id | int | ❌ | 获取该ID之前的消息（用于分页）|
+
+**响应**
+```json
+{
+    "code": 200,
+    "message": "El Psy Kongroo",
+    "data": {
+        "items": [
+            {
+                "id": 1,
+                "content": "El Psy Kongroo",
+                "type": "text",
+                "created_at": "2025-12-25T10:30:00+08:00",
+                "sender": {
+                    "id": 1,
+                    "name": "凤凰院凶真",
+                    "avatar": null
+                }
+            }
+        ],
+        "has_more": false
+    }
+}
+```
+
+**错误响应**
+```json
+{
+    "code": 403,
+    "message": "只能查看好友的聊天记录"
+}
+```
+
+---
+
+### WebSocket 私聊事件
+
+**监听私聊频道后可接收：**
+
+| 事件 | 说明 |
+|------|------|
+| .private-message.sent | 收到新的私聊消息 |
+
+**事件数据格式**
+```json
+{
+    "id": 1,
+    "conversation_id": "1_2",
+    "content": "El Psy Kongroo",
+    "type": "text",
+    "created_at": "2025-12-25T10:30:00+08:00",
+    "sender": {
+        "id": 1,
+        "name": "凤凰院凶真",
+        "avatar": null
+    }
+}
+```
 

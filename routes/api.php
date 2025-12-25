@@ -6,6 +6,8 @@ use App\Http\Controllers\UploadController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChannelController;
+use App\Http\Controllers\FriendController;
+use App\Http\Controllers\PrivateChatController;
 use App\Http\Middleware\JwtAuth;
 
 /*
@@ -25,6 +27,7 @@ Route::prefix('users')->group(function () {
 Route::middleware(JwtAuth::class)->group(function () {
     // 用户相关
     Route::prefix('users')->group(function () {
+        Route::get('/search', [FriendController::class, 'searchUsers']); // 搜索用户（用于添加好友）
         Route::get('/', [UserController::class, 'index']);           // 获取所有Labmem
         Route::get('/{id}', [UserController::class, 'show']);        // 获取单个Labmem信息
         Route::put('/{id}', [UserController::class, 'update']);      // 更新Labmem信息
@@ -50,5 +53,21 @@ Route::middleware(JwtAuth::class)->group(function () {
         Route::get('/', [ChannelController::class, 'index']);        // 获取频道列表
         Route::post('/', [ChannelController::class, 'store']);       // 创建新频道
         Route::get('/{name}', [ChannelController::class, 'show']);   // 获取频道详情
+    });
+
+    // 好友相关
+    Route::prefix('friends')->group(function () {
+        Route::get('/', [FriendController::class, 'index']);              // 获取好友列表
+        Route::post('/request', [FriendController::class, 'sendRequest']); // 发送好友请求
+        Route::get('/requests', [FriendController::class, 'getRequests']); // 获取待处理请求
+        Route::post('/{id}/accept', [FriendController::class, 'acceptRequest']); // 接受请求
+        Route::post('/{id}/reject', [FriendController::class, 'rejectRequest']); // 拒绝请求
+        Route::delete('/{friendId}', [FriendController::class, 'destroy']); // 删除好友
+    });
+
+    // 私聊相关
+    Route::prefix('private-chat')->group(function () {
+        Route::post('/send', [PrivateChatController::class, 'send']);       // 发送私聊消息
+        Route::get('/history', [PrivateChatController::class, 'history']);  // 获取私聊历史
     });
 });

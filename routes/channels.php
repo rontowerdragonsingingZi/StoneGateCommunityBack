@@ -29,7 +29,20 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
 
-// 私聊频道（扩展用）
-Broadcast::channel('chat.{recipientId}', function ($user, $recipientId) {
-    return $user ? ['id' => $user->id, 'name' => $user->name] : false;
+// 私聊频道 - Private Channel
+// 频道名格式: private-chat.{minId}_{maxId}
+Broadcast::channel('private-chat.{conversationId}', function ($user, $conversationId) {
+    // 解析 conversationId，验证用户是否为会话参与者
+    $ids = explode('_', $conversationId);
+    if (count($ids) !== 2) {
+        return false;
+    }
+    $userId1 = (int) $ids[0];
+    $userId2 = (int) $ids[1];
+    
+    // 检查当前用户是否为会话参与者
+    if ((int) $user->id === $userId1 || (int) $user->id === $userId2) {
+        return true;
+    }
+    return false;
 });
