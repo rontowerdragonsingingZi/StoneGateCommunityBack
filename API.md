@@ -468,3 +468,103 @@ Authorization: Bearer <token>
   "data": null
 }
 
+---
+
+## 圆桌会议（实时聊天）
+
+> 使用 Laravel Reverb WebSocket 实现实时通信
+
+### WebSocket 连接
+
+- WebSocket 地址：`wss://ws.mahoer.space`
+- 广播认证接口：`POST /api/broadcasting/auth`
+- 频道：`presence-lobby`（Presence Channel，可获取在线用户列表）
+
+### 发送消息 🔒
+
+> 需要JWT认证
+
+POST /api/chat/send
+Content-Type: application/json
+Authorization: Bearer <token>
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| content | string | ✅ | 消息内容（最多2000字）|
+| type | string | ❌ | 消息类型：text/image/system，默认text |
+
+**请求示例**
+```json
+{
+    "content": "这就是命运石之门的选择！"
+}
+```
+
+**成功响应**
+```json
+{
+    "code": 201,
+    "message": "D-Mail已发送至世界线",
+    "data": {
+        "id": 1,
+        "content": "这就是命运石之门的选择！",
+        "type": "text",
+        "created_at": "2025-12-25T10:30:00+08:00",
+        "user": {
+            "id": 1,
+            "name": "凤凰院凶真",
+            "avatar": null
+        }
+    }
+}
+```
+
+### 获取历史消息 🔒
+
+> 需要JWT认证
+
+GET /api/chat/history?limit=50&before_id=100
+Authorization: Bearer <token>
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| limit | int | ❌ | 获取数量，默认50，最大100 |
+| before_id | int | ❌ | 获取该ID之前的消息（用于分页）|
+
+**响应**
+```json
+{
+    "code": 200,
+    "message": "El Psy Kongroo",
+    "data": {
+        "items": [
+            {
+                "id": 1,
+                "content": "这就是命运石之门的选择！",
+                "type": "text",
+                "created_at": "2025-12-25T10:30:00+08:00",
+                "user": {
+                    "id": 1,
+                    "name": "凤凰院凶真",
+                    "avatar": null
+                }
+            }
+        ],
+        "has_more": false
+    }
+}
+```
+
+### WebSocket 事件
+
+**连接到 lobby 频道后可监听：**
+
+| 事件 | 说明 |
+|------|------|
+| here | 连接成功时返回当前在线用户列表 |
+| joining | 有新用户加入 |
+| leaving | 有用户离开 |
+| .message.sent | 收到新消息 |
+
