@@ -32,8 +32,9 @@ class MessageSent implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
+        // 频道名格式: chat.{channelName}
         return [
-            new PresenceChannel($this->message->channel),
+            new PresenceChannel('chat.' . $this->message->channel),
         ];
     }
 

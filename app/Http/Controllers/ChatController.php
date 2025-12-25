@@ -11,13 +11,14 @@ use Illuminate\Http\JsonResponse;
 class ChatController extends Controller
 {
     /**
-     * 发送消息到大厅
+     * 发送消息到指定频道
      */
     public function send(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'content' => 'required|string|max:2000',
             'type' => 'sometimes|in:text,image,system',
+            'channel' => 'required|string|max:50|regex:/^[a-z0-9_-]+$/',
         ]);
 
         $userId = $request->attributes->get('jwt_user_id');
@@ -31,10 +32,12 @@ class ChatController extends Controller
             ], 401);
         }
 
+        $channelName = $validated['channel'];
+
         // 创建消息
         $message = Message::create([
             'user_id' => $userId,
-            'channel' => 'lobby',
+            'channel' => $channelName,
             'content' => $validated['content'],
             'type' => $validated['type'] ?? 'text',
         ]);
@@ -60,19 +63,21 @@ class ChatController extends Controller
     }
 
     /**
-     * 获取大厅历史消息
+     * 获取指定频道的历史消息
      */
     public function history(Request $request): JsonResponse
     {
         $request->validate([
+            'channel' => 'required|string|max:50|regex:/^[a-z0-9_-]+$/',
             'before_id' => 'sometimes|integer',
             'limit' => 'sometimes|integer|min:1|max:100',
         ]);
 
+        $channelName = $request->input('channel');
         $limit = $request->input('limit', 50);
         $beforeId = $request->input('before_id');
 
-        $query = Message::where('channel', 'lobby')
+        $query = Message::where('channel', $channelName)
             ->with('user:id,name,avatar')
             ->orderBy('id', 'desc');
 

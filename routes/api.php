@@ -5,6 +5,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\UploadController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\ChannelController;
 use App\Http\Middleware\JwtAuth;
 
 /*
@@ -42,5 +43,12 @@ Route::middleware(JwtAuth::class)->group(function () {
     Route::prefix('chat')->group(function () {
         Route::post('/send', [ChatController::class, 'send']);       // 发送消息
         Route::get('/history', [ChatController::class, 'history']);  // 获取历史消息
+    });
+
+    // 频道相关
+    Route::prefix('channels')->group(function () {
+        Route::get('/', [ChannelController::class, 'index']);        // 获取频道列表
+        Route::post('/', [ChannelController::class, 'store']);       // 创建新频道
+        Route::get('/{name}', [ChannelController::class, 'show']);   // 获取频道详情
     });
 });

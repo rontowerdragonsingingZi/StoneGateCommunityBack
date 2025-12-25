@@ -12,8 +12,8 @@ use App\Models\User;
 |
 */
 
-// 公共大厅 - Presence Channel（可获取在线用户列表）
-Broadcast::channel('lobby', function ($user) {
+// 聊天频道 - Presence Channel（支持动态频道名，可获取在线用户列表）
+Broadcast::channel('chat.{channelName}', function ($user, $channelName) {
     if ($user) {
         return [
             'id' => $user->id,
