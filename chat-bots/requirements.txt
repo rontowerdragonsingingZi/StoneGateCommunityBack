@@ -1,0 +1,21 @@
+# 聊天机器人依赖
+# Python 3.10+
+
+# WebSocket 客户端 (Pusher)
+pysher>=1.0.8
+
+# HTTP 异步客户端
+httpx>=0.27.0
+
+# 配置文件解析
+pyyaml>=6.0.1
+
+# AI API 客户端
+anthropic>=0.39.0      # Claude API
+openai>=1.50.0         # OpenAI API (可选)
+
+# 异步支持
+asyncio-compat>=0.1.1
+
+# 日志美化 (可选)
+rich>=13.7.0
