@@ -19,7 +19,7 @@ class PrivateChatController extends Controller
         $validated = $request->validate([
             'friend_id' => 'required|integer|exists:users,id',
             'content' => 'required|string|max:2000',
-            'type' => 'sometimes|in:text,image,file,system',
+            'type' => 'sometimes|in:text,image,file,sticker,system',
         ]);
 
         $userId = $request->attributes->get('jwt_user_id');

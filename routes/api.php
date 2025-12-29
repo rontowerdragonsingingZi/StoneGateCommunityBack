@@ -8,6 +8,7 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChannelController;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\PrivateChatController;
+use App\Http\Controllers\StickerController;
 use App\Http\Middleware\JwtAuth;
 
 /*
@@ -52,6 +53,7 @@ Route::middleware(JwtAuth::class)->group(function () {
     // 频道相关
     Route::prefix('channels')->group(function () {
         Route::get('/', [ChannelController::class, 'index']);        // 获取频道列表
+        Route::get('/mine', [ChannelController::class, 'mine']);     // 获取我创建的频道
         Route::post('/', [ChannelController::class, 'store']);       // 创建新频道
         Route::get('/{name}', [ChannelController::class, 'show']);   // 获取频道详情
     });
@@ -70,5 +72,17 @@ Route::middleware(JwtAuth::class)->group(function () {
     Route::prefix('private-chat')->group(function () {
         Route::post('/send', [PrivateChatController::class, 'send']);       // 发送私聊消息
         Route::get('/history', [PrivateChatController::class, 'history']);  // 获取私聊历史
+    });
+
+    // 表情相关
+    Route::prefix('stickers')->group(function () {
+        Route::get('/', [StickerController::class, 'index']);              // 获取我的表情列表
+        Route::get('/system', [StickerController::class, 'system']);       // 获取系统表情
+        Route::get('/public', [StickerController::class, 'public']);       // 获取公开表情
+        Route::post('/', [StickerController::class, 'store']);             // 上传新表情
+        Route::post('/default', [StickerController::class, 'storeDefault']); // 管理员上传默认表情
+        Route::post('/{id}/collect', [StickerController::class, 'collect']);     // 收藏表情
+        Route::delete('/{id}/collect', [StickerController::class, 'uncollect']); // 取消收藏
+        Route::delete('/{id}', [StickerController::class, 'destroy']);     // 删除自己的表情
     });
 });

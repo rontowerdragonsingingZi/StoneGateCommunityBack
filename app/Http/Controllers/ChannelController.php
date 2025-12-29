@@ -9,7 +9,7 @@ use Illuminate\Http\JsonResponse;
 class ChannelController extends Controller
 {
     /**
-     * 获取频道列表
+     * 获取频道列表（公开频道）
      */
     public function index(): JsonResponse
     {
@@ -17,6 +17,25 @@ class ChannelController extends Controller
             ->where('is_private', false)
             ->orderByDesc('is_default')
             ->orderBy('created_at')
+            ->get();
+
+        return response()->json([
+            'code' => 0,
+            'message' => 'success',
+            'data' => $channels,
+        ]);
+    }
+
+    /**
+     * 获取我创建的频道
+     */
+    public function mine(Request $request): JsonResponse
+    {
+        $userId = $request->attributes->get('jwt_user_id');
+
+        $channels = Channel::with('creator:id,name')
+            ->where('creator_id', $userId)
+            ->orderByDesc('created_at')
             ->get();
 
         return response()->json([

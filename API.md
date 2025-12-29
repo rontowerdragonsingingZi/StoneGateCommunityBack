@@ -46,6 +46,17 @@ Token有效期为24小时，过期后需重新登录获取。
 | DELETE /api/friends/{friendId} | 删除好友 |
 | POST /api/private-chat/send | 发送私聊消息 |
 | GET /api/private-chat/history | 获取私聊历史消息 |
+| GET /api/channels | 获取公开频道列表 |
+| GET /api/channels/mine | 获取我创建的频道 |
+| POST /api/channels | 创建新频道 |
+| GET /api/channels/{name} | 获取频道详情 |
+| GET /api/stickers | 获取我的表情列表 |
+| GET /api/stickers/system | 获取系统表情 |
+| GET /api/stickers/public | 获取公开表情（广场）|
+| POST /api/stickers | 上传新表情 |
+| POST /api/stickers/{id}/collect | 收藏表情 |
+| DELETE /api/stickers/{id}/collect | 取消收藏 |
+| DELETE /api/stickers/{id} | 删除自己的表情 |
 
 ### 不需要JWT认证的接口
 
@@ -518,6 +529,197 @@ Authorization: Bearer <token>
 
 ---
 
+## 频道管理 (Channels)
+
+> 频道是用户创建的群组聊天室，支持公开和私有两种模式
+
+### 1. 获取公开频道列表 🔒
+
+> 需要JWT认证
+> 返回所有公开频道（is_private=false）
+
+**请求**
+```
+GET /api/channels
+Authorization: Bearer <token>
+```
+
+**响应**
+```json
+{
+    "code": 0,
+    "message": "success",
+    "data": [
+        {
+            "id": 1,
+            "name": "lobby",
+            "display_name": "大厅",
+            "description": "默认公共频道",
+            "is_default": true,
+            "is_private": false,
+            "creator_id": null,
+            "creator": null,
+            "created_at": "2025-12-25T10:00:00.000000Z"
+        },
+        {
+            "id": 2,
+            "name": "tech-talk",
+            "display_name": "技术讨论",
+            "description": "讨论技术问题",
+            "is_default": false,
+            "is_private": false,
+            "creator_id": 1,
+            "creator": {
+                "id": 1,
+                "name": "凤凰院凶真"
+            },
+            "created_at": "2025-12-25T11:00:00.000000Z"
+        }
+    ]
+}
+```
+
+---
+
+### 2. 获取我创建的频道 🔒
+
+> 需要JWT认证
+> 返回当前用户创建的所有频道（包括公开和私有）
+
+**请求**
+```
+GET /api/channels/mine
+Authorization: Bearer <token>
+```
+
+**响应**
+```json
+{
+    "code": 0,
+    "message": "success",
+    "data": [
+        {
+            "id": 2,
+            "name": "my-channel",
+            "display_name": "我的频道",
+            "description": "私人频道",
+            "is_default": false,
+            "is_private": true,
+            "creator_id": 1,
+            "creator": {
+                "id": 1,
+                "name": "凤凰院凶真"
+            },
+            "created_at": "2025-12-25T11:00:00.000000Z"
+        }
+    ]
+}
+```
+
+---
+
+### 3. 创建新频道 🔒
+
+> 需要JWT认证
+
+**请求**
+```
+POST /api/channels
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| name | string | ✅ | 频道名称（小写字母、数字、下划线、短横线，最夔50字）|
+| display_name | string | ✅ | 显示名称（最多100字）|
+| description | string | ❌ | 频道描述（最多500字）|
+| is_private | boolean | ❌ | 是否私有频道，默认false |
+
+**请求示例**
+```json
+{
+    "name": "my-channel",
+    "display_name": "我的频道",
+    "description": "这是我创建的频道",
+    "is_private": false
+}
+```
+
+**成功响应**
+```json
+{
+    "code": 0,
+    "message": "Channel created successfully",
+    "data": {
+        "id": 3,
+        "name": "my-channel",
+        "display_name": "我的频道",
+        "description": "这是我创建的频道",
+        "is_default": false,
+        "is_private": false,
+        "creator_id": 1,
+        "creator": {
+            "id": 1,
+            "name": "凤凰院凶真"
+        },
+        "created_at": "2025-12-25T12:00:00.000000Z"
+    }
+}
+```
+
+**错误响应（频道名已存在）**
+```json
+{
+    "message": "The name has already been taken.",
+    "errors": {
+        "name": ["The name has already been taken."]
+    }
+}
+```
+
+---
+
+### 4. 获取频道详情 🔒
+
+> 需要JWT认证
+
+**请求**
+```
+GET /api/channels/{name}
+Authorization: Bearer <token>
+```
+
+**响应**
+```json
+{
+    "code": 0,
+    "message": "success",
+    "data": {
+        "id": 1,
+        "name": "lobby",
+        "display_name": "大厅",
+        "description": "默认公共频道",
+        "is_default": true,
+        "is_private": false,
+        "creator_id": null,
+        "creator": null,
+        "created_at": "2025-12-25T10:00:00.000000Z"
+    }
+}
+```
+
+**错误响应（频道不存在）**
+```json
+{
+    "code": 404,
+    "message": "Channel not found"
+}
+```
+
+---
+
 ## 圆桌会议（实时聊天）
 
 > 使用 Laravel Reverb WebSocket 实现实时通信
@@ -541,7 +743,7 @@ Authorization: Bearer <token>
 |------|------|------|------|
 | content | string | ✅ | 消息内容（文本或文件URL，最多2000字）|
 | channel | string | ✅ | 频道名称 |
-| type | string | ❌ | 消息类型：text/image/file/system，默认text |
+| type | string | ❌ | 消息类型：text/image/file/sticker/system，默认text |
 
 **type 类型说明**
 | 值 | 说明 | content 内容 |
@@ -549,6 +751,7 @@ Authorization: Bearer <token>
 | text | 纯文本消息 | 文本内容 |
 | image | 图片消息 | 图片URL |
 | file | 文件消息 | 文件URL |
+| sticker | 表情消息 | 表情图片URL |
 | system | 系统消息 | 系统提示文本 |
 
 **请求示例**
@@ -924,7 +1127,7 @@ Authorization: Bearer <token>
 |------|------|------|------|
 | friend_id | int | ✅ | 好友的用户ID |
 | content | string | ✅ | 消息内容（文本或文件URL，最多2000字）|
-| type | string | ❌ | 消息类型：text/image/file/system，默认text |
+| type | string | ❌ | 消息类型：text/image/file/sticker/system，默认text |
 
 **type 类型说明**
 | 值 | 说明 | content 内容 |
@@ -932,6 +1135,7 @@ Authorization: Bearer <token>
 | text | 纯文本消息 | 文本内容 |
 | image | 图片消息 | 图片URL |
 | file | 文件消息 | 文件URL |
+| sticker | 表情消息 | 表情图片URL |
 | system | 系统消息 | 系统提示文本 |
 
 **请求示例**
@@ -1046,6 +1250,239 @@ Authorization: Bearer <token>
         "name": "凤凰院凶真",
         "avatar": null
     }
+}
+```
+
+---
+
+## 表情系统 (Stickers)
+
+> 支持系统表情、用户上传表情、收藏他人表情
+> 表情存储在 Cloudflare R2
+
+### 1. 获取我的表情列表 🔒
+
+> 需要JWT认证
+> 返回系统表情、我上传的表情、我收藏的表情
+
+**请求**
+```
+GET /api/stickers
+Authorization: Bearer <token>
+```
+
+**可选参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| category | string | ❌ | 按分类筛选 |
+
+**响应**
+```json
+{
+    "code": 200,
+    "data": {
+        "system": [
+            {
+                "id": 1,
+                "user_id": null,
+                "name": "开心",
+                "url": "https://r2.example.com/stickers/happy.png",
+                "category": "default",
+                "is_public": true
+            }
+        ],
+        "mine": [],
+        "collected": []
+    }
+}
+```
+
+---
+
+### 2. 获取系统表情 🔒
+
+> 需要JWT认证
+> 按分类分组返回
+
+**请求**
+```
+GET /api/stickers/system
+Authorization: Bearer <token>
+```
+
+**响应**
+```json
+{
+    "code": 200,
+    "data": {
+        "default": [
+            {
+                "id": 1,
+                "name": "开心",
+                "url": "https://r2.example.com/stickers/happy.png",
+                "category": "default"
+            }
+        ]
+    }
+}
+```
+
+---
+
+### 3. 获取公开表情（广场） 🔒
+
+> 需要JWT认证
+> 获取其他用户上传的公开表情，支持分页
+
+**请求**
+```
+GET /api/stickers/public?page=1&per_page=50
+Authorization: Bearer <token>
+```
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| page | int | ❌ | 页码，默认1 |
+| per_page | int | ❌ | 每页数量，默认50 |
+
+**响应**
+```json
+{
+    "code": 200,
+    "data": [
+        {
+            "id": 5,
+            "user_id": 2,
+            "name": "有趣的表情",
+            "url": "https://r2.example.com/users/2/stickers/xyz.png",
+            "user": {
+                "id": 2,
+                "name": "牧濑红莉栖"
+            }
+        }
+    ],
+    "meta": {
+        "current_page": 1,
+        "last_page": 1,
+        "total": 1
+    }
+}
+```
+
+---
+
+### 4. 上传新表情 🔒
+
+> 需要JWT认证
+> 表情图片最大 2MB
+
+**请求**
+```
+POST /api/stickers
+Content-Type: multipart/form-data
+Authorization: Bearer <token>
+```
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| file | file | ✅ | 表情图片文件 |
+| name | string | ❌ | 表情名称（默认为文件名）|
+| category | string | ❌ | 分类（默认 custom）|
+| is_public | boolean | ❌ | 是否公开（默认 true）|
+
+**成功响应**
+```json
+{
+    "code": 201,
+    "message": "表情上传成功",
+    "data": {
+        "id": 10,
+        "user_id": 1,
+        "name": "我的表情",
+        "url": "https://r2.example.com/users/1/stickers/uuid.png",
+        "category": "custom",
+        "is_public": true
+    }
+}
+```
+
+---
+
+### 5. 收藏表情 🔒
+
+> 需要JWT认证
+> 不能收藏自己的表情
+
+**请求**
+```
+POST /api/stickers/{id}/collect
+Authorization: Bearer <token>
+```
+
+**成功响应**
+```json
+{
+    "code": 200,
+    "message": "收藏成功"
+}
+```
+
+**错误响应**
+```json
+{
+    "code": 400,
+    "message": "不能收藏自己的表情"
+}
+```
+
+---
+
+### 6. 取消收藏 🔒
+
+> 需要JWT认证
+
+**请求**
+```
+DELETE /api/stickers/{id}/collect
+Authorization: Bearer <token>
+```
+
+**成功响应**
+```json
+{
+    "code": 200,
+    "message": "取消收藏成功"
+}
+```
+
+---
+
+### 7. 删除自己的表情 🔒
+
+> 需要JWT认证
+> 只能删除自己上传的表情
+
+**请求**
+```
+DELETE /api/stickers/{id}
+Authorization: Bearer <token>
+```
+
+**成功响应**
+```json
+{
+    "code": 200,
+    "message": "删除成功"
+}
+```
+
+**错误响应**
+```json
+{
+    "code": 404,
+    "message": "表情不存在或无权删除"
 }
 ```
 
