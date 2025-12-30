@@ -57,6 +57,7 @@ Route::middleware(JwtAuth::class)->group(function () {
         Route::get('/mine', [ChannelController::class, 'mine']);     // 获取我创建的频道
         Route::post('/', [ChannelController::class, 'store']);       // 创建新频道
         Route::get('/{name}', [ChannelController::class, 'show']);   // 获取频道详情
+        Route::put('/{name}/announcement', [ChannelController::class, 'updateAnnouncement']); // 更新频道公告
     });
 
     // 好友相关

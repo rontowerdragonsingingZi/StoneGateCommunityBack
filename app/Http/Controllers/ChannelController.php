@@ -95,4 +95,43 @@ class ChannelController extends Controller
             'data' => $channel,
         ]);
     }
+
+    /**
+     * 更新频道公告（仅创建者可操作）
+     */
+    public function updateAnnouncement(Request $request, string $name): JsonResponse
+    {
+        $userId = $request->attributes->get('jwt_user_id');
+
+        $channel = Channel::where('name', $name)->first();
+
+        if (!$channel) {
+            return response()->json([
+                'code' => 404,
+                'message' => 'Channel not found',
+            ], 404);
+        }
+
+        // 检查是否是创建者（默认频道允许任何人更新公告）
+        if (!$channel->is_default && $channel->creator_id !== $userId) {
+            return response()->json([
+                'code' => 403,
+                'message' => '只有频道创建者才能更新公告',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'announcement' => 'nullable|string|max:1000',
+        ]);
+
+        $channel->update([
+            'announcement' => $validated['announcement'] ?? null,
+        ]);
+
+        return response()->json([
+            'code' => 0,
+            'message' => '公告更新成功',
+            'data' => $channel,
+        ]);
+    }
 }

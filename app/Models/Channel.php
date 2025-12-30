@@ -12,6 +12,7 @@ class Channel extends Model
         'name',
         'display_name',
         'description',
+        'announcement',
         'creator_id',
         'is_default',
         'is_private',

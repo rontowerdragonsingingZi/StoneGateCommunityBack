@@ -720,6 +720,59 @@ Authorization: Bearer <token>
 
 ---
 
+### 5. 更新频道公告 🔒
+
+> 需要JWT认证，仅频道创建者或管理员可操作
+
+**请求**
+```
+PUT /api/channels/{name}/announcement
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| announcement | string | ❌ | 频道公告内容（最多1000字，传空字符串清除公告）|
+
+**请求示例**
+```json
+{
+    "announcement": "欢迎来到命运石之门社区！请遵守社区规则。"
+}
+```
+
+**成功响应**
+```json
+{
+    "code": 0,
+    "message": "Announcement updated",
+    "data": {
+        "id": 1,
+        "name": "lobby",
+        "display_name": "大厅",
+        "description": "默认公共频道",
+        "announcement": "欢迎来到命运石之门社区！请遵守社区规则。",
+        "is_default": true,
+        "is_private": false,
+        "creator_id": null,
+        "creator": null,
+        "created_at": "2025-12-25T10:00:00.000000Z"
+    }
+}
+```
+
+**错误响应（无权限）**
+```json
+{
+    "code": 403,
+    "message": "Unauthorized"
+}
+```
+
+---
+
 ## 圆桌会议（实时聊天）
 
 > 使用 Laravel Reverb WebSocket 实现实时通信
