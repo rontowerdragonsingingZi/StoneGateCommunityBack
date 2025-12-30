@@ -25,6 +25,7 @@ class User extends Authenticatable
         'avatar',
         'contact',
         'is_bot',
+        'personality',
     ];
 
     /**
