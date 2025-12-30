@@ -73,11 +73,12 @@ class BotService
             return false;
         }
 
-        // 不回复其他机器人的消息（避免无限对话）
+        // 机器人可以回复其他机器人，但概率较低（避免无限对话）
         $sender = User::find($message->user_id);
-        if ($sender && $sender->is_bot) {
-            // 小概率回复其他机器人（增加趣味性）
-            return $this->rollDice(0.03);
+        $isBotToBot = $sender && $sender->is_bot;
+        if ($isBotToBot) {
+            // 机器人之间对话概率降低，且仍受疲劳度/话题冷却影响
+            // 基础概率 25%，后续会被疲劳度进一步降低
         }
 
         // 不回复系统消息
@@ -96,19 +97,25 @@ class BotService
         }
 
         $content = $message->content;
-        $baseProbability = self::REPLY_PROBABILITY_NORMAL;
 
-        // 被直接提及或@ - 必须回复（但仍受话题冷却影响）
+        // 机器人之间对话用较低的基础概率
+        if ($isBotToBot) {
+            $baseProbability = 0.25; // 25% 基础概率
+        } else {
+            $baseProbability = self::REPLY_PROBABILITY_NORMAL;
+        }
+
+        // 被直接提及或@
         if ($this->isMentioned($content, $bot->name)) {
-            $baseProbability = self::REPLY_PROBABILITY_MENTIONED;
+            $baseProbability = $isBotToBot ? 0.6 : self::REPLY_PROBABILITY_MENTIONED;
         }
         // 问候语
         elseif ($this->isGreeting($content)) {
-            $baseProbability = self::REPLY_PROBABILITY_GREETING;
+            $baseProbability = $isBotToBot ? 0.35 : self::REPLY_PROBABILITY_GREETING;
         }
         // 看起来是问题
         elseif ($this->isQuestion($content)) {
-            $baseProbability = self::REPLY_PROBABILITY_QUESTION;
+            $baseProbability = $isBotToBot ? 0.30 : self::REPLY_PROBABILITY_QUESTION;
         }
 
         // 应用疲劳度调整（连续发言越多，回复概率越低）
