@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -48,5 +49,13 @@ class User extends Authenticatable
         return [
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Get the API configs for the user.
+     */
+    public function apiConfigs(): HasMany
+    {
+        return $this->hasMany(ApiConfig::class);
     }
 }

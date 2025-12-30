@@ -9,6 +9,7 @@ use App\Http\Controllers\ChannelController;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\PrivateChatController;
 use App\Http\Controllers\StickerController;
+use App\Http\Controllers\BotController;
 use App\Http\Middleware\JwtAuth;
 
 /*
@@ -84,5 +85,10 @@ Route::middleware(JwtAuth::class)->group(function () {
         Route::post('/{id}/collect', [StickerController::class, 'collect']);     // 收藏表情
         Route::delete('/{id}/collect', [StickerController::class, 'uncollect']); // 取消收藏
         Route::delete('/{id}', [StickerController::class, 'destroy']);     // 删除自己的表情
+    });
+
+    // 机器人相关（内部API）
+    Route::prefix('bot')->group(function () {
+        Route::get('/configs', [BotController::class, 'configs']);         // 获取所有API配置
     });
 });

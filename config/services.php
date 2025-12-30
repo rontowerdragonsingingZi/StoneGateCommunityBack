@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'deepseek' => [
+        'api_key' => env('DEEPSEEK_API_KEY', ''),
+        'base_url' => env('DEEPSEEK_BASE_URL', 'https://api.deepseek.com'),
+        'model' => env('DEEPSEEK_MODEL', 'deepseek-chat'),
+        'max_retries' => env('DEEPSEEK_MAX_RETRIES', 3),
+        'timeout' => env('DEEPSEEK_TIMEOUT', 30),
+    ],
+
 ];

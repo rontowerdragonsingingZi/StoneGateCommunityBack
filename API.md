@@ -1486,3 +1486,84 @@ Authorization: Bearer <token>
 }
 ```
 
+---
+
+## 机器人系统 (Bot)
+
+> 机器人系统提供 AI 驱动的自动聊天功能
+> 机器人会根据对话上下文自动回复消息，也可以主动发起聊天
+
+### 1. 获取所有 API 配置 🔒
+
+> 需要JWT认证
+> 用于系统内部获取机器人配置
+
+**请求**
+```
+GET /api/bot/configs
+Authorization: Bearer <token>
+```
+
+**响应**
+```json
+{
+    "code": 200,
+    "message": "El Psy Kongroo",
+    "data": [
+        {
+            "id": 1,
+            "api_name": "SGC_冈部伦太郎",
+            "api_key": "sk-xxx...",
+            "user": {
+                "id": 10,
+                "name": "Okabe_Rintaro",
+                "avatar": null,
+                "personality": "你是冈部伦太郎...",
+                "is_bot": true
+            }
+        }
+    ]
+}
+```
+
+---
+
+### 机器人行为说明
+
+**自动回复规则：**
+| 场景 | 回复概率 |
+|------|------|
+| 被 @或提及名字 | 95% |
+| 看起来是问题 | 40% |
+| 问候语 | 60% |
+| 普通消息 | 15% |
+
+**冷却机制：**
+- 回复后 30 秒内不会再次回复同一频道
+- 主动发言后 120 秒内不会再次主动发言
+
+**主动发言：**
+- 通过定时任务 `php artisan bot:chat` 触发
+- 可配置频道和发言概率
+
+**命令示例：**
+```bash
+# 单次发言（30%概率）
+php artisan bot:chat --channel=lobby --probability=30
+
+# 启动守护进程（随机化发言）
+php artisan bot:daemon --channel=lobby --min-interval=60 --max-interval=300
+
+# 带安静时段（23:00-07:00 不发言）
+php artisan bot:daemon --quiet-start=23 --quiet-end=7
+```
+
+**守护进程参数：**
+| 参数 | 默认值 | 说明 |
+|------|------|------|
+| --channel | lobby | 目标频道 |
+| --min-interval | 60 | 最小发言间隔(秒) |
+| --max-interval | 300 | 最大发言间隔(秒) |
+| --quiet-start | 23 | 安静时段开始小时 |
+| --quiet-end | 7 | 安静时段结束小时 |
+

@@ -11,6 +11,7 @@ class JwtService
     private string $key;
     private string $algorithm = 'HS256';
     private int $ttl = 86400; // 24小时
+    private int $botTtl = 86400 * 365; // 机器人 Token 1年
 
     public function __construct()
     {
@@ -28,6 +29,24 @@ class JwtService
             'exp' => $now + $this->ttl, // 过期时间
             'iss' => 'Future Gadget Lab', // 签发者
         ]);
+
+        return JWT::encode($payload, $this->key, $this->algorithm);
+    }
+
+    /**
+     * 为机器人生成长期 Token
+     */
+    public function encodeBot(int $userId, string $userName): string
+    {
+        $now = time();
+        $payload = [
+            'user_id' => $userId,
+            'user_name' => $userName,
+            'is_bot' => true,
+            'iat' => $now,
+            'exp' => $now + $this->botTtl,
+            'iss' => 'Future Gadget Lab Bot',
+        ];
 
         return JWT::encode($payload, $this->key, $this->algorithm);
     }

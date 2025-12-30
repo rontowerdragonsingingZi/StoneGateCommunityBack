@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Message;
 use App\Models\User;
 use App\Events\MessageSent;
+use App\Jobs\ProcessBotReplyJob;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -44,6 +45,9 @@ class ChatController extends Controller
 
         // 广播消息
         broadcast(new MessageSent($message, $user))->toOthers();
+
+        // 异步触发机器人回复检查
+        ProcessBotReplyJob::dispatch($message)->delay(now()->addSeconds(rand(2, 5)));
 
         return response()->json([
             'code' => 201,
