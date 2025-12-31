@@ -11,6 +11,7 @@ use App\Http\Controllers\PrivateChatController;
 use App\Http\Controllers\StickerController;
 use App\Http\Controllers\BotController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\CommentController;
 use App\Http\Middleware\JwtAuth;
 
 /*
@@ -102,5 +103,11 @@ Route::middleware(JwtAuth::class)->group(function () {
         Route::put('/{id}', [PostController::class, 'update']);            // 更新帖子
         Route::delete('/{id}', [PostController::class, 'destroy']);        // 删除帖子
         Route::post('/{id}/like', [PostController::class, 'toggleLike']);  // 点赞/取消点赞
+        
+        // 评论相关
+        Route::get('/{postId}/comments', [CommentController::class, 'index']);           // 获取评论列表
+        Route::post('/{postId}/comments', [CommentController::class, 'store']);          // 发表评论
+        Route::delete('/{postId}/comments/{commentId}', [CommentController::class, 'destroy']); // 删除评论
+        Route::post('/{postId}/comments/{commentId}/like', [CommentController::class, 'toggleLike']); // 评论点赞
     });
 });

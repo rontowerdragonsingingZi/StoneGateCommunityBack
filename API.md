@@ -1855,4 +1855,147 @@ Authorization: Bearer <token>
         "like_count": 50
     }
 }
+```
+
+---
+
+### 7. 获取评论列表 🔒
+
+> 需要JWT认证
+
+**请求**
+```
+GET /api/posts/{postId}/comments?limit=20&page=1
+Authorization: Bearer <token>
+```
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| limit | int | ❌ | 每页数量，默认20，最大50 |
+| page | int | ❌ | 页码，默认1 |
+
+**响应**
+```json
+{
+    "code": 200,
+    "message": "El Psy Kongroo",
+    "data": {
+        "items": [
+            {
+                "id": 1,
+                "user_id": 1,
+                "post_id": 1,
+                "parent_id": null,
+                "content": "这个理论很有意思！",
+                "like_count": 5,
+                "is_liked": false,
+                "created_at": "2025-12-31T10:00:00.000000Z",
+                "user": {
+                    "id": 1,
+                    "name": "凤凰院凶真",
+                    "avatar": null
+                },
+                "replies": [
+                    {
+                        "id": 2,
+                        "user_id": 2,
+                        "content": "同意！",
+                        "like_count": 1,
+                        "is_liked": true,
+                        "user": { ... }
+                    }
+                ]
+            }
+        ],
+        "total": 10,
+        "current_page": 1,
+        "last_page": 1
+    }
+}
+```
+
+---
+
+### 8. 发表评论 🔒
+
+> 需要JWT认证
+
+**请求**
+```
+POST /api/posts/{postId}/comments
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| content | string | ✅ | 评论内容（最大2000字）|
+| parent_id | int | ❌ | 回复的评论ID |
+
+**请求示例**
+```json
+{
+    "content": "这个理论很有意思！",
+    "parent_id": null
+}
+```
+
+**成功响应**
+```json
+{
+    "code": 201,
+    "message": "评论已发送至世界线",
+    "data": {
+        "id": 1,
+        "content": "这个理论很有意思！",
+        "user": { ... }
+    }
+}
+```
+
+---
+
+### 9. 删除评论 🔒
+
+> 需要JWT认证
+> 只能删除自己的评论
+
+**请求**
+```
+DELETE /api/posts/{postId}/comments/{commentId}
+Authorization: Bearer <token>
+```
+
+**成功响应**
+```json
+{
+    "code": 200,
+    "message": "评论已从世界线中移除"
+}
+```
+
+---
+
+### 10. 评论点赞/取消点赞 🔒
+
+> 需要JWT认证
+
+**请求**
+```
+POST /api/posts/{postId}/comments/{commentId}/like
+Authorization: Bearer <token>
+```
+
+**响应**
+```json
+{
+    "code": 200,
+    "message": "已赞同",
+    "data": {
+        "is_liked": true,
+        "like_count": 6
+    }
+}
 

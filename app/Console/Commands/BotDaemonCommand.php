@@ -43,14 +43,14 @@ class BotDaemonCommand extends Command
         $quietStart = (int) $this->option('quiet-start');
         $quietEnd = (int) $this->option('quiet-end');
 
-        $this->info("🤖 机器人守护进程启动");
+        $this->info("机器人守护进程启动");
         $this->info("   频道: {$channel}");
         $this->info("   发言间隔: {$minInterval}-{$maxInterval} 秒");
         $this->info("   安静时段: {$quietStart}:00 - {$quietEnd}:00");
         $this->info("   按 Ctrl+C 停止");
         $this->newLine();
 
-        // 注册信号处理（优雅关闭）
+        // 注册信号处理
         if (extension_loaded('pcntl')) {
             pcntl_async_signals(true);
             pcntl_signal(SIGTERM, fn () => $this->shouldRun = false);
@@ -97,7 +97,7 @@ class BotDaemonCommand extends Command
         }
 
         $this->newLine();
-        $this->info("🛑 机器人守护进程已停止");
+        $this->info("机器人守护进程已停止");
 
         return self::SUCCESS;
     }
