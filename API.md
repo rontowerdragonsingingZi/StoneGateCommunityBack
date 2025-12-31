@@ -1620,3 +1620,239 @@ php artisan bot:daemon --quiet-start=23 --quiet-end=7
 | --quiet-start | 23 | 安静时段开始小时 |
 | --quiet-end | 7 | 安静时段结束小时 |
 
+---
+
+## 观测日志（帖子系统）
+
+> 社区帖子功能，支持发布、点赞、评论、转发
+
+### 1. 获取帖子列表 🔒
+
+> 需要JWT认证
+
+**请求**
+```
+GET /api/posts?tag=TECH&limit=20&page=1
+Authorization: Bearer <token>
+```
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| tag | string | ❌ | 标签筛选：THEORY/TECH/MISSION/GENERAL |
+| user_id | int | ❌ | 按作者筛选 |
+| limit | int | ❌ | 每页数量，默认20，最大50 |
+| page | int | ❌ | 页码，默认1 |
+
+**响应**
+```json
+{
+    "code": 200,
+    "message": "El Psy Kongroo",
+    "data": {
+        "items": [
+            {
+                "id": 1,
+                "title": "关于时间机器的理论探讨",
+                "content": "内容...",
+                "cover": "https://r2.example.com/covers/xxx.jpg",
+                "tag": "THEORY",
+                "view_count": 100,
+                "like_count": 50,
+                "comment_count": 10,
+                "share_count": 5,
+                "is_liked": false,
+                "created_at": "2025-12-31T10:00:00.000000Z",
+                "user": {
+                    "id": 1,
+                    "name": "凤凰院凶真",
+                    "avatar": null
+                }
+            }
+        ],
+        "total": 100,
+        "current_page": 1,
+        "last_page": 5
+    }
+}
+```
+
+---
+
+### 2. 获取帖子详情 🔒
+
+> 需要JWT认证
+> 访问时自动增加浏览量
+
+**请求**
+```
+GET /api/posts/{id}
+Authorization: Bearer <token>
+```
+
+**响应**
+```json
+{
+    "code": 200,
+    "message": "El Psy Kongroo",
+    "data": {
+        "id": 1,
+        "title": "关于时间机器的理论探讨",
+        "content": "详细内容...",
+        "cover": "https://r2.example.com/covers/xxx.jpg",
+        "tag": "THEORY",
+        "view_count": 101,
+        "like_count": 50,
+        "comment_count": 10,
+        "share_count": 5,
+        "is_liked": true,
+        "created_at": "2025-12-31T10:00:00.000000Z",
+        "user": {
+            "id": 1,
+            "name": "凤凰院凶真",
+            "avatar": null
+        }
+    }
+}
+```
+
+---
+
+### 3. 创建帖子 🔒
+
+> 需要JWT认证
+
+**请求**
+```
+POST /api/posts
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| title | string | ✅ | 标题（最多200字）|
+| content | string | ✅ | 内容 |
+| cover | string | ❌ | 封面图片URL |
+| tag | string | ❌ | 标签，默认GENERAL |
+
+**请求示例**
+```json
+{
+    "title": "关于时间机器的理论探讨",
+    "content": "我们在实验中发现...",
+    "cover": "https://r2.example.com/covers/xxx.jpg",
+    "tag": "THEORY"
+}
+```
+
+**成功响应**
+```json
+{
+    "code": 201,
+    "message": "观测日志已记录至世界线",
+    "data": {
+        "id": 1,
+        "title": "关于时间机器的理论探讨",
+        "....": "..."
+    }
+}
+```
+
+---
+
+### 4. 更新帖子 🔒
+
+> 需要JWT认证
+> 只能更新自己的帖子
+
+**请求**
+```
+PUT /api/posts/{id}
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| title | string | ❌ | 标题 |
+| content | string | ❌ | 内容 |
+| cover | string | ❌ | 封面图片URL |
+| tag | string | ❌ | 标签 |
+
+**成功响应**
+```json
+{
+    "code": 200,
+    "message": "观测日志已更新",
+    "data": { ... }
+}
+```
+
+**错误响应**
+```json
+{
+    "code": 403,
+    "message": "无权修改他人的观测日志"
+}
+```
+
+---
+
+### 5. 删除帖子 🔒
+
+> 需要JWT认证
+> 只能删除自己的帖子
+
+**请求**
+```
+DELETE /api/posts/{id}
+Authorization: Bearer <token>
+```
+
+**成功响应**
+```json
+{
+    "code": 200,
+    "message": "观测日志已从世界线中移除"
+}
+```
+
+---
+
+### 6. 点赞/取消点赞 🔒
+
+> 需要JWT认证
+> 已点赞则取消，未点赞则点赞
+
+**请求**
+```
+POST /api/posts/{id}/like
+Authorization: Bearer <token>
+```
+
+**响应（点赞）**
+```json
+{
+    "code": 200,
+    "message": "已赞同",
+    "data": {
+        "is_liked": true,
+        "like_count": 51
+    }
+}
+```
+
+**响应（取消点赞）**
+```json
+{
+    "code": 200,
+    "message": "已取消赞同",
+    "data": {
+        "is_liked": false,
+        "like_count": 50
+    }
+}
+

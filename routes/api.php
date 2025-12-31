@@ -10,6 +10,7 @@ use App\Http\Controllers\FriendController;
 use App\Http\Controllers\PrivateChatController;
 use App\Http\Controllers\StickerController;
 use App\Http\Controllers\BotController;
+use App\Http\Controllers\PostController;
 use App\Http\Middleware\JwtAuth;
 
 /*
@@ -91,5 +92,15 @@ Route::middleware(JwtAuth::class)->group(function () {
     // 机器人相关（内部API）
     Route::prefix('bot')->group(function () {
         Route::get('/configs', [BotController::class, 'configs']);         // 获取所有API配置
+    });
+
+    // 帖子相关（观测日志）
+    Route::prefix('posts')->group(function () {
+        Route::get('/', [PostController::class, 'index']);                 // 获取帖子列表
+        Route::post('/', [PostController::class, 'store']);                // 创建帖子
+        Route::get('/{id}', [PostController::class, 'show']);              // 获取帖子详情
+        Route::put('/{id}', [PostController::class, 'update']);            // 更新帖子
+        Route::delete('/{id}', [PostController::class, 'destroy']);        // 删除帖子
+        Route::post('/{id}/like', [PostController::class, 'toggleLike']);  // 点赞/取消点赞
     });
 });
