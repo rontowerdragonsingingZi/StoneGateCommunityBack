@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Post;
 use App\Models\Friendship;
 use App\Models\PrivateMessage;
 use App\Events\PrivateMessageSent;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class PrivateChatController extends Controller
 {
@@ -137,6 +139,128 @@ class PrivateChatController extends Controller
             'data' => [
                 'items' => $items,
                 'has_more' => $messages->count() === $limit,
+            ],
+        ]);
+    }
+
+    /**
+     * 获取最近会话列表（用于转发面板）
+     */
+    public function conversations(Request $request): JsonResponse
+    {
+        $userId = $request->attributes->get('jwt_user_id');
+
+        // 获取所有好友，并附带最近一条消息
+        $friends = Friendship::where('user_id', $userId)
+            ->where('status', 'accepted')
+            ->with('friend:id,name,avatar')
+            ->get();
+
+        $conversations = $friends->map(function ($friendship) use ($userId) {
+            $conversationId = PrivateMessage::makeConversationId($userId, $friendship->friend_id);
+            
+            // 获取最近一条消息
+            $lastMessage = PrivateMessage::where('conversation_id', $conversationId)
+                ->orderBy('id', 'desc')
+                ->first();
+
+            // 获取未读消息数
+            $unreadCount = PrivateMessage::where('conversation_id', $conversationId)
+                ->where('receiver_id', $userId)
+                ->where('is_read', false)
+                ->count();
+
+            return [
+                'friend' => [
+                    'id' => $friendship->friend->id,
+                    'name' => $friendship->friend->name,
+                    'avatar' => $friendship->friend->avatar,
+                ],
+                'last_message' => $lastMessage ? [
+                    'content' => $lastMessage->content,
+                    'type' => $lastMessage->type,
+                    'created_at' => $lastMessage->created_at->toIso8601String(),
+                ] : null,
+                'unread_count' => $unreadCount,
+            ];
+        })->sortByDesc(function ($conv) {
+            return $conv['last_message']['created_at'] ?? '1970-01-01';
+        })->values();
+
+        return response()->json([
+            'code' => 200,
+            'message' => 'El Psy Kongroo',
+            'data' => $conversations,
+        ]);
+    }
+
+    /**
+     * 转发帖子给好友
+     */
+    public function forwardPost(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'friend_ids' => 'required|array|min:1|max:10',
+            'friend_ids.*' => 'integer|exists:users,id',
+            'post_id' => 'required|integer|exists:posts,id',
+            'message' => 'nullable|string|max:500',
+        ]);
+
+        $userId = $request->attributes->get('jwt_user_id');
+        $user = User::find($userId);
+        $post = Post::with('user:id,name')->find($validated['post_id']);
+
+        if (!$user || !$post) {
+            return response()->json([
+                'code' => 404,
+                'message' => '用户或帖子不存在',
+            ], 404);
+        }
+
+        $successCount = 0;
+        $failedFriends = [];
+
+        foreach ($validated['friend_ids'] as $friendId) {
+            // 验证是否为好友
+            if (!Friendship::areFriends($userId, $friendId)) {
+                $failedFriends[] = $friendId;
+                continue;
+            }
+
+            $conversationId = PrivateMessage::makeConversationId($userId, $friendId);
+
+            // 构建帖子卡片消息内容（JSON格式）
+            $content = json_encode([
+                'post_id' => $post->id,
+                'title' => $post->title,
+                'content' => mb_substr($post->content, 0, 100) . (mb_strlen($post->content) > 100 ? '...' : ''),
+                'cover' => $post->cover,
+                'author' => $post->user->name ?? 'Unknown',
+                'message' => $validated['message'] ?? null,
+            ], JSON_UNESCAPED_UNICODE);
+
+            $message = PrivateMessage::create([
+                'conversation_id' => $conversationId,
+                'sender_id' => $userId,
+                'receiver_id' => $friendId,
+                'content' => $content,
+                'type' => 'post_share',
+            ]);
+
+            // 广播消息
+            broadcast(new PrivateMessageSent($message, $user))->toOthers();
+            $successCount++;
+        }
+
+        // 更新帖子转发数
+        $post->increment('share_count', $successCount);
+
+        return response()->json([
+            'code' => 200,
+            'message' => "已转发给 {$successCount} 位好友",
+            'data' => [
+                'success_count' => $successCount,
+                'failed_friends' => $failedFriends,
             ],
         ]);
     }

@@ -76,6 +76,8 @@ Route::middleware(JwtAuth::class)->group(function () {
     Route::prefix('private-chat')->group(function () {
         Route::post('/send', [PrivateChatController::class, 'send']);       // 发送私聊消息
         Route::get('/history', [PrivateChatController::class, 'history']);  // 获取私聊历史
+        Route::get('/conversations', [PrivateChatController::class, 'conversations']); // 获取会话列表
+        Route::post('/forward-post', [PrivateChatController::class, 'forwardPost']);   // 转发帖子
     });
 
     // 表情相关
