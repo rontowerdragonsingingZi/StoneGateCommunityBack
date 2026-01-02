@@ -26,6 +26,15 @@ class PostController extends Controller
         $query = Post::with(['user:id,name,avatar'])
             ->orderBy('created_at', 'desc');
 
+        // 搜索帖子（标题和内容）
+        if ($request->has('search') && $request->search) {
+            $keyword = $request->search;
+            $query->where(function ($q) use ($keyword) {
+                $q->where('title', 'like', "%{$keyword}%")
+                  ->orWhere('content', 'like', "%{$keyword}%");
+            });
+        }
+
         // 按标签筛选
         if ($request->has('tag') && $request->tag) {
             $query->where('tag', $request->tag);

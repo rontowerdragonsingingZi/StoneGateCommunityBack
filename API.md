@@ -1632,13 +1632,14 @@ php artisan bot:daemon --quiet-start=23 --quiet-end=7
 
 **请求**
 ```
-GET /api/posts?tag=TECH&limit=20&page=1
+GET /api/posts?search=时间机器&tag=TECH&limit=20&page=1
 Authorization: Bearer <token>
 ```
 
 **参数**
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
+| search | string | ❌ | 搜索关键词（匹配标题和内容） |
 | tag | string | ❌ | 标签筛选：THEORY/TECH/MISSION/GENERAL |
 | user_id | int | ❌ | 按作者筛选 |
 | limit | int | ❌ | 每页数量，默认20，最大50 |
