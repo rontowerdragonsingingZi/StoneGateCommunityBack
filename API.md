@@ -1998,4 +1998,206 @@ Authorization: Bearer <token>
         "like_count": 6
     }
 }
+```
 
+---
+
+## 世界线观测（通知系统）
+
+> 通知系统用于提醒用户点赞、评论、转发、私聊、好友请求等事件
+
+### 通知类型说明
+
+| 类型 | 说明 |
+|------|------|
+| post_like | 帖子被点赞 |
+| comment_like | 评论被点赞 |
+| comment | 帖子收到评论 |
+| comment_reply | 评论被回复 |
+| post_share | 帖子被转发 |
+| private_message | 收到私聊消息 |
+| friend_request | 收到好友请求 |
+
+---
+
+### 1. 获取通知列表 🔒
+
+> 需要JWT认证
+
+**请求**
+```
+GET /api/notifications?type=post_like&limit=20&page=1
+Authorization: Bearer <token>
+```
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | string | ❌ | 筛选通知类型 |
+| limit | int | ❌ | 每页数量，默认20，最大50 |
+| page | int | ❌ | 页码，默认1 |
+
+**响应**
+```json
+{
+    "code": 200,
+    "message": "El Psy Kongroo",
+    "data": {
+        "items": [
+            {
+                "id": 1,
+                "user_id": 1,
+                "sender_id": 2,
+                "type": "post_like",
+                "notifiable_type": "App\\Models\\Post",
+                "notifiable_id": 10,
+                "data": {
+                    "post_title": "关于时间机器的理论探讨"
+                },
+                "read_at": null,
+                "created_at": "2025-12-31T10:00:00.000000Z",
+                "sender": {
+                    "id": 2,
+                    "name": "牧濑红莉栖",
+                    "avatar": null
+                }
+            }
+        ],
+        "total": 50,
+        "current_page": 1,
+        "last_page": 3,
+        "unread_count": 10
+    }
+}
+```
+
+---
+
+### 2. 获取未读通知数量 🔒
+
+> 需要JWT认证
+
+**请求**
+```
+GET /api/notifications/unread-count
+Authorization: Bearer <token>
+```
+
+**响应**
+```json
+{
+    "code": 200,
+    "message": "El Psy Kongroo",
+    "data": {
+        "total": 15,
+        "by_type": {
+            "like": 5,
+            "comment": 3,
+            "share": 2,
+            "message": 4,
+            "friend": 1
+        }
+    }
+}
+```
+
+---
+
+### 3. 标记通知为已读 🔒
+
+> 需要JWT认证
+> 可批量标记多个通知
+
+**请求**
+```
+POST /api/notifications/read
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| ids | array | ✅ | 通知ID数组 |
+
+**请求示例**
+```json
+{
+    "ids": [1, 2, 3]
+}
+```
+
+**响应**
+```json
+{
+    "code": 200,
+    "message": "已标记为已读",
+    "data": {
+        "updated_count": 3
+    }
+}
+```
+
+---
+
+### 4. 标记所有通知为已读 🔒
+
+> 需要JWT认证
+
+**请求**
+```
+POST /api/notifications/read-all
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+
+**参数**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | string | ❌ | 只标记某类型的通知 |
+
+**请求示例**
+```json
+{
+    "type": "post_like"
+}
+```
+
+**响应**
+```json
+{
+    "code": 200,
+    "message": "已全部标记为已读",
+    "data": {
+        "updated_count": 10
+    }
+}
+```
+
+---
+
+### 5. 删除通知 🔒
+
+> 需要JWT认证
+
+**请求**
+```
+DELETE /api/notifications/{id}
+Authorization: Bearer <token>
+```
+
+**响应**
+```json
+{
+    "code": 200,
+    "message": "已删除通知"
+}
+```
+
+**错误响应**
+```json
+{
+    "code": 404,
+    "message": "通知不存在"
+}
+```

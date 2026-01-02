@@ -5,11 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\Post;
 use App\Models\Like;
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class PostController extends Controller
 {
+    protected NotificationService $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+
     /**
      * 获取帖子列表
      */
@@ -201,6 +209,9 @@ class PostController extends Controller
             $post->increment('like_count');
             $isLiked = true;
             $message = '已赞同';
+
+            // 发送通知
+            $this->notificationService->notifyPostLike($post, $userId);
         }
 
         return response()->json([

@@ -5,11 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\Comment;
 use App\Models\Post;
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class CommentController extends Controller
 {
+    protected NotificationService $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+
     /**
      * 获取帖子的评论列表
      */
@@ -119,6 +127,18 @@ class CommentController extends Controller
         // 更新帖子评论数
         $post->increment('comment_count');
 
+        // 发送通知
+        if ($actualParentId !== null) {
+            // 这是一个回复
+            $parentComment = Comment::find($actualParentId);
+            if ($parentComment) {
+                $this->notificationService->notifyCommentReply($comment, $parentComment, $userId);
+            }
+        } else {
+            // 这是主评论，通知帖子作者
+            $this->notificationService->notifyComment($comment, $post, $userId);
+        }
+
         $comment->load(['user:id,name,avatar', 'replyToUser:id,name']);
 
         return response()->json([
@@ -192,6 +212,9 @@ class CommentController extends Controller
             $comment->increment('like_count');
             $isLiked = true;
             $message = '已赞同';
+
+            // 发送通知
+            $this->notificationService->notifyCommentLike($comment, $userId);
         }
 
         return response()->json([

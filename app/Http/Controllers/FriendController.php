@@ -4,12 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Friendship;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
 class FriendController extends Controller
 {
+    protected NotificationService $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+
     /**
      * 获取好友列表
      */
@@ -97,11 +105,14 @@ class FriendController extends Controller
         }
 
         // 创建好友请求
-        Friendship::create([
+        $friendship = Friendship::create([
             'user_id' => $userId,
             'friend_id' => $friendId,
             'status' => 'pending',
         ]);
+
+        // 发送通知
+        $this->notificationService->notifyFriendRequest($friendship, $userId, $friendId);
 
         return response()->json([
             'code' => 0,

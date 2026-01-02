@@ -12,6 +12,7 @@ use App\Http\Controllers\StickerController;
 use App\Http\Controllers\BotController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Middleware\JwtAuth;
 
 /*
@@ -111,5 +112,14 @@ Route::middleware(JwtAuth::class)->group(function () {
         Route::post('/{postId}/comments', [CommentController::class, 'store']);          // 发表评论
         Route::delete('/{postId}/comments/{commentId}', [CommentController::class, 'destroy']); // 删除评论
         Route::post('/{postId}/comments/{commentId}/like', [CommentController::class, 'toggleLike']); // 评论点赞
+    });
+
+    // 通知相关
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']);              // 获取通知列表
+        Route::get('/unread-count', [NotificationController::class, 'unreadCount']); // 获取未读数量
+        Route::post('/read', [NotificationController::class, 'read']);          // 标记已读
+        Route::post('/read-all', [NotificationController::class, 'readAll']);   // 全部已读
+        Route::delete('/{id}', [NotificationController::class, 'destroy']);     // 删除通知
     });
 });

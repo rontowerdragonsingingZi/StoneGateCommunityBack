@@ -7,12 +7,20 @@ use App\Models\Post;
 use App\Models\Friendship;
 use App\Models\PrivateMessage;
 use App\Events\PrivateMessageSent;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
 class PrivateChatController extends Controller
 {
+    protected NotificationService $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+
     /**
      * 发送私聊消息
      */
@@ -57,6 +65,9 @@ class PrivateChatController extends Controller
 
         // 广播消息
         broadcast(new PrivateMessageSent($message, $user))->toOthers();
+
+        // 发送通知
+        $this->notificationService->notifyPrivateMessage($message);
 
         return response()->json([
             'code' => 201,
@@ -249,6 +260,11 @@ class PrivateChatController extends Controller
 
             // 广播消息
             broadcast(new PrivateMessageSent($message, $user))->toOthers();
+            
+            // 发送通知
+            $this->notificationService->notifyPrivateMessage($message);
+            $this->notificationService->notifyPostShare($post, $userId, $validated['message'] ?? null);
+            
             $successCount++;
         }
 
